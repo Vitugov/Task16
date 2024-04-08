@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
+using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -18,10 +19,32 @@ namespace Task16.View
     /// </summary>
     public partial class MainWindow : Window
     {
-        public MainWindow()
+        private Dictionary<string, string> columnNames = new Dictionary<string, string>
+        {
+            {"Id", "Id"},
+            {"FirstName", "Имя                   "},
+            {"Surname", "Фамилия             "},
+            {"Patronymic", "Отчество         "},
+            {"Email", "Электронная почта                            "},
+            {"TelephoneNumber", "Номер телефона         "},
+            {"ProductId", "Id товара        "},
+            {"ProductName", "Название товара       "}
+        };
+    public MainWindow()
         {
             InitializeComponent();
             DataContext = new MainWindowVM();
+            this.Activated += (DataContext as MainWindowVM).RefreshView;
+        }
+
+        private void DataGrid_AutoGeneratingColumn(object sender, DataGridAutoGeneratingColumnEventArgs e)
+        {
+            
+            string headerName = e.Column.Header.ToString();
+            if (columnNames.ContainsKey(headerName))
+            {
+                e.Column.Header = columnNames[headerName];
+            }
         }
 
     }

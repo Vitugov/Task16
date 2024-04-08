@@ -6,16 +6,32 @@ using System.Threading.Tasks;
 using System.Data.SqlClient;
 using System.Data.OleDb;
 using System.Windows.Controls;
+using System.Data.Common;
 
 
 namespace Task16.Other
 {
-    public static class DBConnection
+    public class DBConnections
     {
-        public static async Task<bool> IsMSSQLConnectionAccessible()
+        public static DBConnections Instance { get; }
+        public SqlConnection SqlConnection { get; }
+        public OleDbConnection OleDbConnection { get; }
+        public Task<bool> IsSqlAccessible => IsAccessible(SqlConnection);
+        public Task<bool> IsOleDbAccessible => IsAccessible(OleDbConnection);
+
+        static DBConnections()
         {
-            var connectionString = GetMsSqlConnectionString();
-            var connection = new SqlConnection(connectionString);
+            Instance = new DBConnections();
+        }
+
+        public DBConnections()
+        {
+            OleDbConnection = GetOleDbConnection();
+            SqlConnection = GetSqlConnection();
+        }
+        public async Task<bool> IsAccessible<T>(T connection)
+            where T : DbConnection
+        {
             try
             {
                 connection.Open();
@@ -28,20 +44,16 @@ namespace Task16.Other
             }
         }
 
-        public static async Task<bool> IsOleDbConnectionAccessible()
+        public static SqlConnection GetSqlConnection()
+        {
+            var connectionString = GetMsSqlConnectionString();
+            return new SqlConnection(connectionString);
+        }
+
+        public static OleDbConnection GetOleDbConnection()
         {
             var connectionString = GetOleDbConnectionString();
-            var connection = new OleDbConnection(connectionString);
-            try
-            {
-                connection.Open();
-                connection.Close();
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
+            return new OleDbConnection(connectionString);
         }
 
         public static string GetMsSqlConnectionString()
@@ -53,6 +65,7 @@ namespace Task16.Other
                 IntegratedSecurity = false,
                 UserID = "Admin",
                 Password = "Qwe123",
+                Pooling = true,
                 ConnectTimeout = 1
             };
             return sqlConnectionBuilder.ConnectionString;

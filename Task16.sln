@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.9.34714.143
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Task16", "Task16.csproj", "{25C1215A-1B37-4911-89FA-F2DBE9E515BB}"
+	ProjectSection(ProjectDependencies) = postProject
+		{9051E253-6551-494D-A3D5-FD942F3151A3} = {9051E253-6551-494D-A3D5-FD942F3151A3}
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WPFUsefullThings", "..\Task12\WPFUsefullThings\WPFUsefullThings.csproj", "{9051E253-6551-494D-A3D5-FD942F3151A3}"
 EndProject
