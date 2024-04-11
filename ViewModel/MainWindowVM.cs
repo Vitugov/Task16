@@ -1,18 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using WPFUsefullThings;
+﻿using WPFUsefullThings;
 using Task16.Other;
 using System.Data.SqlClient;
 using System.Data;
-using Microsoft.SqlServer.Management.Smo.Agent;
 using System.Data.OleDb;
 using System.Windows.Input;
 using Task16.View;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
-using System.Data.Common;
+using System.Windows;
+using System.ComponentModel;
+using Microsoft.SqlServer.Management.Smo.Agent;
 
 namespace Task16.ViewModel
 {
@@ -21,7 +16,7 @@ namespace Task16.ViewModel
     {
         public SqlDataAdapter SqlDataAdapter => DataAdapterInitializer.Instance.SqlDataAdapter;
         public OleDbDataAdapter OleDbDataAdapter => DataAdapterInitializer.Instance.OleDbDataAdapter;
-        
+
         private DataTable _Clients;
         public DataTable Clients
         {
@@ -30,20 +25,20 @@ namespace Task16.ViewModel
         }
         public DataTable Orders { get; set; }
 
-        public DataTable _OrdersView;
-        
-        public DataTable OrdersView
+        public DataView _OrdersView;
+
+        public DataView OrdersView
         {
             get => _OrdersView;
             set => Set(ref _OrdersView, value);
         }
 
-        
+
         private DataRowView? _SelectedClient;
         public DataRowView? SelectedClient
         {
             get => _SelectedClient;
-            set => SetWithAction(ref _SelectedClient, value, RefreshOrders);
+            set => Set(ref _SelectedClient, value);
         }
 
         private DataRowView? _SelectedOrder;
@@ -57,7 +52,7 @@ namespace Task16.ViewModel
         public bool IsAllOrdersVisible
         {
             get => _IsAllOrdersVisible;
-            set => SetWithAction(ref _IsAllOrdersVisible, value, RefreshOrders);
+            set => Set(ref _IsAllOrdersVisible, value);
         }
 
         public ICommand AddNewClientCommand { get; }
@@ -70,48 +65,66 @@ namespace Task16.ViewModel
 
         public MainWindowVM()
         {
+            SubscribeToPropertyChanged(MainWindowVM_PropertyChanged);
+
             Clients = new DataTable();
             Orders = new DataTable();
             SqlDataAdapter.Fill(Clients);
             OleDbDataAdapter.Fill(Orders);
-            RefreshOrders();
+            Clients.PrimaryKey = [Clients.Columns["Id"]];
+            Orders.PrimaryKey = [Orders.Columns["Id"]];
+
             AddNewClientCommand = new RelayCommand(obj => ExecuteChangeClient());
-            ChangeClientCommand = new RelayCommand(obj => ExecuteChangeClient(SelectedClient.Row), obj => SelectedClient != null );
-            DeleteClientCommand = new RelayCommand(obj => ExecuteDeleteClient(SelectedClient.Row), obj => SelectedClient != null );
+            ChangeClientCommand = new RelayCommand(obj => ExecuteChangeClient(SelectedClient.Row), obj => SelectedClient != null);
+            DeleteClientCommand = new RelayCommand(obj => ExecuteDeleteClient(SelectedClient.Row), obj => SelectedClient != null);
+
+            AddNewOrderCommand = new RelayCommand(obj => ExecuteChangeOrder(SelectedClient != null ? SelectedClient.Row["Email"].ToString() : null));
+            ChangeOrderCommand = new RelayCommand(obj => ExecuteChangeOrder(null, SelectedOrder.Row), obj => SelectedOrder != null);
+            DeleteOrderCommand = new RelayCommand(obj => ExecuteDeleteOrder(SelectedOrder.Row), obj => SelectedOrder != null);
         }
 
         public void RefreshOrders()
         {
-            DataTable newOrders = new DataTable();
-            OleDbDataAdapter.Fill(newOrders);
-            Orders = newOrders;
-            OrdersView = newOrders;
+            using (var connection = DBConnections.GetOleDbConnection())
+            {
+                connection.Open();
+                using (var command = new OleDbCommand("SELECT * FROM Orders", connection))
+                {
+                    using (var reader = command.ExecuteReader())
+                    {
+                        Orders.Load(reader);
+                    }
+                }
+            }
+
+            OrdersView = new DataView(Orders);
+
             if (IsAllOrdersVisible)
             {
                 return;
             }
             if (SelectedClient == null)
             {
-                //OrdersView = Orders;
-                OrdersView = Orders.Copy();
-                OrdersView.Rows.Clear();
+                OrdersView.RowFilter = "Email = ''";
                 return;
-            }
-
-            var email = SelectedClient["Email"].ToString();
-            Orders = new DataTable();
-            OleDbDataAdapter.Fill(Orders);
-            var selection = Orders.AsEnumerable()
-                .Where(row => row.Field<string>("Email") == email);
-            if (selection.Any())
-            {
-                OrdersView = selection.CopyToDataTable();
             }
             else
             {
-                OrdersView = Orders.Copy();
-                OrdersView.Rows.Clear();
+                var email = SelectedClient["Email"].ToString();
+                OrdersView.RowFilter = $"Email = '{email.Replace("'", "''")}'";
             }
+
+            //var selection = Orders.AsEnumerable()
+            //    .Where(row => row.Field<string>("Email") == email);
+            //if (selection.Any())
+            //{
+            //    OrdersView = selection.CopyToDataTable();
+            //}
+            //else
+            //{
+            //    OrdersView = Orders.Copy();
+            //    OrdersView.Rows.Clear();
+            //}
 
         }
 
@@ -122,10 +135,21 @@ namespace Task16.ViewModel
 
         public void RefreshView()
         {
-            SelectedClient = null;
-            var newClients = new DataTable();
-            SqlDataAdapter.Fill(newClients);
-            Clients = newClients;
+            using (var connection = DBConnections.Instance.SqlConnection)
+            {
+                connection.Open();
+                using (var reader = SqlDataAdapter.SelectCommand.ExecuteReader())
+                {
+                    Clients.Load(reader);
+
+                }
+                connection.Close();
+            }
+
+            //SelectedClient = null;
+            //var newClients = new DataTable();
+            //SqlDataAdapter.Fill(newClients);
+            //Clients = newClients;
             RefreshOrders();
         }
 
@@ -137,8 +161,35 @@ namespace Task16.ViewModel
 
         private void ExecuteDeleteClient(DataRow clientRow)
         {
+            if (Orders.Rows.IsAnyOrder(clientRow))
+            {
+                MessageBox.Show("Нельзя удалить клиента у которого есть заказы", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
             clientRow.Delete();
             SqlDataAdapter.Update(Clients);
+        }
+
+        private void ExecuteChangeOrder(string? clientEmail, DataRow? orderRow = null)
+        {
+            var clientsList = Clients.GetClientsEmailDictionary();
+
+            var orderView = new OrderView(OleDbDataAdapter, Orders, clientsList, clientEmail, orderRow);
+            orderView.ShowDialog();
+        }
+
+        private void ExecuteDeleteOrder(DataRow orderRow)
+        {
+            orderRow.Delete();
+            OleDbDataAdapter.Update(Orders);
+        }
+
+        private void MainWindowVM_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(SelectedClient) || e.PropertyName == nameof(IsAllOrdersVisible))
+            {
+                RefreshOrders();
+            }
         }
     }
 }

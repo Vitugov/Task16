@@ -12,13 +12,7 @@ using System.Data.Common;
 namespace Task16.Other
 {
     public class DataAdapterInitializer
-    {
-        //public delegate TOut DataAdapterBuilderM<TOut, TIn1, TIn2>
-        //    (StringCommands stringCommands, TIn1[] dbParameters, TIn2 connection, TOut dataAdapter)
-        //    where TIn1 : DbParameter
-        //    where TIn2 : DbConnection
-        //    where TOut : DbDataAdapter, IDbDataAdapter;
-        
+    {        
         public static DataAdapterInitializer Instance { get; }
 
         public SqlDataAdapter SqlDataAdapter { get; }
@@ -72,32 +66,33 @@ namespace Task16.Other
 
         private StringCommands GetOleDbStringCommands()
         {
-            var sqlStringCommands = new StringCommands();
-            sqlStringCommands.Select =
+            var oleDbStringCommands = new StringCommands();
+            oleDbStringCommands.Select =
                 @"SELECT *
                   FROM Orders
                   ORDER BY Id;";
-            sqlStringCommands.Insert =
+            oleDbStringCommands.Insert =
                 @"INSERT INTO Orders (Email, ProductId, ProductName)
-                  VALUES (@Email, @ProductId, @ProductName);
-                  SET @Id = @@iDENTITY;";
-            sqlStringCommands.Update =
+                  VALUES (@Email, @ProductId, @ProductName)";
+            oleDbStringCommands.Update =
                 @"UPDATE Orders SET
                     Email = @Email,
                     ProductId = @ProductId,
-                    ProductName = @ProductName,
+                    ProductName = @ProductName
                   WHERE Id = @Id;";
-            sqlStringCommands.Delete =
+            oleDbStringCommands.Delete =
                 @"DELETE FROM Orders
                   WHERE Id = @Id;";
-            return sqlStringCommands;
+            return oleDbStringCommands;
         }
 
         private SqlParameter[] GetSqlParameters()
         {
+            var idParameter = new SqlParameter("@Id", SqlDbType.Int, 4, "Id");
+            idParameter.Direction = ParameterDirection.Output;
             return
             [
-                new SqlParameter("@Id", SqlDbType.Int, 4, "Id"),
+                idParameter,
                 new SqlParameter("@Surname", SqlDbType.NVarChar, 25, "Surname"),
                 new SqlParameter("@FirstName", SqlDbType.NVarChar, 25, "FirstName"),
                 new SqlParameter("@Patronymic", SqlDbType.NVarChar, 25, "Patronymic"),
@@ -110,10 +105,11 @@ namespace Task16.Other
         {
             return
             [
-                new OleDbParameter("@Id", OleDbType.Integer, 4, "Id"),
+                
                 new OleDbParameter("@Email", OleDbType.WChar, 50, "Email"),
-                new OleDbParameter("@ProductId", OleDbType.SmallInt, 4, "ProductId"),
-                new OleDbParameter("ProductName", OleDbType.WChar, 50, "ProductName")
+                new OleDbParameter("@ProductId", OleDbType.Integer, 0, "ProductId"),
+                new OleDbParameter("@ProductName", OleDbType.WChar, 50, "ProductName"),
+                new OleDbParameter("@Id", OleDbType.Integer, 0, "Id")
             ];
         }
 
@@ -129,9 +125,9 @@ namespace Task16.Other
             dataAdapter.UpdateCommand = commandsDb.UpdateCommand;
             dataAdapter.DeleteCommand = commandsDb.DeleteCommand;
 
-            dataAdapter.InsertCommand.Parameters.AddMany(dbParameters);
+            dataAdapter.InsertCommand.Parameters.AddMany(dbParameters.Take(3).ToArray());
             dataAdapter.UpdateCommand.Parameters.AddMany(dbParameters);
-            dataAdapter.DeleteCommand.Parameters.Add(dbParameters[0]);
+            dataAdapter.DeleteCommand.Parameters.Add(dbParameters[3]);
 
             return dataAdapter;
         }

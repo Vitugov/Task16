@@ -54,15 +54,15 @@
                     <Button
                         Grid.Column="2"
                         Content="Создать новый заказ"
-                        Command="{Binding AddNewClientCommand}"/>
+                        Command="{Binding AddNewOrderCommand}"/>
                     <Button
                         Grid.Column="3"
                         Content="Редактировать заказ"
-                        Command="{Binding ChangeClientCommand}"/>
+                        Command="{Binding ChangeOrderCommand}"/>
                     <Button
                         Grid.Column="4"
                         Content="Удалить заказ"
-                        Command="{Binding DeleteClientCommand}"/>
+                        Command="{Binding DeleteOrderCommand}"/>
                 </Grid>
                 <DataGrid
                     ItemsSource="{Binding OrdersView}"

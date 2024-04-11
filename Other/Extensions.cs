@@ -7,6 +7,9 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Data.OleDb;
 using System.Data.SqlClient;
+using System.Collections.ObjectModel;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
+using System.Runtime.CompilerServices;
 
 namespace Task16.Other
 {
@@ -49,6 +52,33 @@ namespace Task16.Other
             {
                 throw new ArgumentException();
             }
+        }
+
+        public static Dictionary<string, string> GetClientsEmailDictionary(this DataTable clientsTable)
+        {
+            var resultList = new Dictionary<string, string>();
+            foreach (DataRow row in clientsTable.Rows)
+            {
+                var surname = row["Surname"].ToString() ?? "";
+                var firstName = row["FirstName"].ToString() ?? "";
+                var patronymic = row["Patronymic"].ToString() ?? "";
+                var email = row["Email"].ToString() ?? "";
+                var client = $"{email} ({surname} {firstName} {patronymic})";
+                resultList[client] = email;
+            }
+            return resultList;
+        }
+
+        public static bool IsAnyOrder(this DataRowCollection orders, DataRow client)
+        {
+            var email = client["Email"].ToString();
+            foreach (DataRow row in orders)
+            {
+                var rowEmail = row["email"].ToString();
+                if (Equals(rowEmail, email))
+                    return true;
+            }
+            return false;
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
@@ -8,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using WPFUsefullThings;
+using WPFUsefullThings.Validation;
 
 namespace Task16.ViewModel
 {
@@ -55,11 +57,48 @@ namespace Task16.ViewModel
             set => Set(ref _Email, value);
         }
 
+        private bool _SurnameValid;
+        public bool SurnameValid
+        {
+            get => _SurnameValid;
+            set => Set(ref _SurnameValid, value);
+        }
+
+        private bool _FirstNameValid;
+        public bool FirstNameValid
+        {
+            get => _FirstNameValid;
+            set => Set(ref _FirstNameValid, value);
+        }
+
+        private bool _PatronymicValid;
+        public bool PatronymicValid
+        {
+            get => _PatronymicValid;
+            set => Set(ref _PatronymicValid, value);
+        }
+
+        private bool _TelephoneNumberValid;
+        public bool TelephoneNumberValid
+        {
+            get => _TelephoneNumberValid;
+            set => Set(ref _TelephoneNumberValid, value);
+        }
+
+        private bool _EmailValid;
+        public bool EmailValid
+        {
+            get => _EmailValid;
+            set => Set(ref _EmailValid, value);
+        }
+
         public ICommand SaveCommand { get; }
         public ICommand CancelCommand { get; }
 
         public ClientVM(DataTable dataTable, SqlDataAdapter dataAdapter, DataRow? clientRow = null)
         {
+            SubscribeToPropertyChanged(ClientVM_PropertyChanged);
+
             DataAdapter = dataAdapter;
             Clients = dataTable;
             IsNew = (clientRow == null);
@@ -71,27 +110,79 @@ namespace Task16.ViewModel
             TelephoneNumber = CurrentClientRow["TelephoneNumber"].ToString() ?? "";
             Email = CurrentClientRow["Email"].ToString() ?? "";
 
-            SaveCommand = new RelayCommand(obj => { ExecuteSaveCommand(); CloseWindow(obj); });
+            SaveCommand = new RelayCommand(obj => ExecuteSaveCommand(obj));
             CancelCommand = new RelayCommand(obj => CloseWindow(obj));
         }
 
-        private void ExecuteSaveCommand()
+        private void ExecuteSaveCommand(object obj)
         {
-            CurrentClientRow["Surname"] = Surname;
-            CurrentClientRow["FirstName"] = FirstName;
-            CurrentClientRow["Patronymic"] = Patronymic;
-            CurrentClientRow["TelephoneNumber"] = TelephoneNumber;
-            CurrentClientRow["Email"] = Email;
-            
+            if (!Validate())
+            {
+                ValidationRules.ShowErrorMessage();
+                return;
+            }
+
+            SaveDataToRow();
+
             if (IsNew)
             {
                 Clients.Rows.Add(CurrentClientRow);
             }
 
             DataAdapter.Update(Clients);
+            Clients.AcceptChanges();
+            CloseWindow(obj);
+        }
+
+        private void SaveDataToRow()
+        {
+            CurrentClientRow["Surname"] = Surname;
+            CurrentClientRow["FirstName"] = FirstName;
+            CurrentClientRow["Patronymic"] = Patronymic;
+            CurrentClientRow["TelephoneNumber"] = TelephoneNumber;
+            CurrentClientRow["Email"] = Email;
         }
 
         internal void CloseWindow(object obj) => (obj as Window).Close();
+
+        private bool Validate()
+        {
+            var validationArray = new bool[]
+            {
+                SurnameValid,
+                FirstNameValid,
+                PatronymicValid,
+                TelephoneNumberValid,
+                EmailValid,
+            };
+
+            return validationArray.IsValid();
+        }
+
+        private void ClientVM_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(Surname))
+            {
+                SurnameValid = Surname.ValidateNotEmptyString();
+            }
+            if (e.PropertyName == nameof(FirstName))
+            {
+                FirstNameValid = FirstName.ValidateNotEmptyString();
+            }
+            if (e.PropertyName == nameof(Patronymic))
+            {
+                PatronymicValid = Patronymic.ValidateNotEmptyString();
+            }
+            if (e.PropertyName == nameof(TelephoneNumber))
+            {
+                TelephoneNumberValid = true;
+            }
+            if (e.PropertyName == nameof(Email))
+            {
+                EmailValid = Email.ValidateEmail();
+            }
+        }
+
 
     }
 }

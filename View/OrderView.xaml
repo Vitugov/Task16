@@ -3,10 +3,80 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:Task16.View"
+        xmlns:conv="clr-namespace:WPFUsefullThings;assembly=WPFUsefullThings"
+        xmlns:local="clr-namespace:Task16"
+        xmlns:other="clr-namespace:Task16.Other"
         mc:Ignorable="d"
-        Title="OrderView" Height="450" Width="800">
-    <Grid>
-        
-    </Grid>
+        Title="OrderView" Height="265" Width="625"
+        Name="OrderWindow">
+    <Window.Resources>
+        <other:DictionaryToBindableListConverter x:Key="DictToListConverter"/>
+    </Window.Resources>
+    <Border Style="{StaticResource BorderStyle}">
+        <StackPanel>
+            <TextBlock Style="{StaticResource HeaderStyle}">Реквизиты заказа</TextBlock>
+            <Grid Margin="0,20,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="150"/>
+                    <ColumnDefinition Width="400"/>
+                    <ColumnDefinition Width="30"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock
+                    Text="E-mail:"
+                    Style="{StaticResource TextBlockStyle}"/>
+                    <TextBlock
+                    Text="Id товара:"
+                    Style="{StaticResource TextBlockStyle}"/>
+                    <TextBlock
+                    Text="Наименование товара:"
+                    Style="{StaticResource TextBlockStyle}"/>
+
+                </StackPanel>
+                <StackPanel Grid.Column="1">
+                    <ComboBox
+                        DisplayMemberPath="Name"
+                        SelectedValuePath="Email"
+                        SelectedValue="{Binding Email, Mode=TwoWay}"
+                        ItemsSource="{Binding ClientsEmailDic, Converter={StaticResource DictToListConverter}}"/>
+                    <TextBox
+                        Text="{Binding ProductId, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource StringToIntConverter}}"
+                        Style="{StaticResource TextBoxStyle}"/>
+                    <TextBox
+                        Text="{Binding ProductName, UpdateSourceTrigger=PropertyChanged}"
+                        Style="{StaticResource TextBoxStyle}"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                    <TextBlock
+                        Text="{Binding EmailValid, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource BoolToTextConverter}}"
+                        Foreground="{Binding EmailValid, Converter={StaticResource BoolToColorConverter}}"
+                        Style="{StaticResource TextBlockStyle}"/>
+                    <TextBlock
+                        Text="{Binding ProductIdValid, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource BoolToTextConverter}}"
+                        Foreground="{Binding ProductIdValid, Converter={StaticResource BoolToColorConverter}}"
+                        Style="{StaticResource TextBlockStyle}"/>
+                    <TextBlock
+                        Text="{Binding ProductNameValid, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource BoolToTextConverter}}"
+                        Foreground="{Binding ProductNameValid, Converter={StaticResource BoolToColorConverter}}"
+                        Style="{StaticResource TextBlockStyle}"/>
+                </StackPanel>
+            </Grid>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="293"/>
+                    <ColumnDefinition Width="292"/>
+                </Grid.ColumnDefinitions>
+                <Button
+                Grid.Column="0"
+                Content="Отмена"
+                Command="{Binding CancelCommand}"
+                CommandParameter="{Binding ElementName=OrderWindow}"/>
+                <Button
+                Grid.Column="1"
+                Content="Сохранить"
+                Command="{Binding SaveCommand}"
+                CommandParameter="{Binding ElementName=OrderWindow}"/>
+            </Grid>
+        </StackPanel>
+    </Border>
 </Window>
