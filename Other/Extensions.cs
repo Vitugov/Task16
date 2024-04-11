@@ -23,7 +23,7 @@ namespace Task16.Other
         //    }
         //}
 
-        public static void AddMany(this IDataParameterCollection targetParameters, DbParameter[] sourceParameters)
+        public static void AddMany(this IDataParameterCollection targetParameters, params DbParameter[] sourceParameters)
         {
             foreach (var param in sourceParameters)
             {

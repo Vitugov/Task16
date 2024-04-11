@@ -7,7 +7,6 @@ using System.Windows.Input;
 using Task16.View;
 using System.Windows;
 using System.ComponentModel;
-using Microsoft.SqlServer.Management.Smo.Agent;
 
 namespace Task16.ViewModel
 {
@@ -71,8 +70,15 @@ namespace Task16.ViewModel
             Orders = new DataTable();
             SqlDataAdapter.Fill(Clients);
             OleDbDataAdapter.Fill(Orders);
+            Clients.Columns["Id"].AutoIncrement = true;
+            Clients.Columns["Id"].AutoIncrementSeed = 0;
+            Clients.Columns["Id"].AutoIncrementStep = 1;
+            Orders.Columns["Id"].AutoIncrement = true;
+            Orders.Columns["Id"].AutoIncrementSeed = 0;
+            Orders.Columns["Id"].AutoIncrementStep = 1;
             Clients.PrimaryKey = [Clients.Columns["Id"]];
             Orders.PrimaryKey = [Orders.Columns["Id"]];
+
 
             AddNewClientCommand = new RelayCommand(obj => ExecuteChangeClient());
             ChangeClientCommand = new RelayCommand(obj => ExecuteChangeClient(SelectedClient.Row), obj => SelectedClient != null);
@@ -85,17 +91,7 @@ namespace Task16.ViewModel
 
         public void RefreshOrders()
         {
-            using (var connection = DBConnections.GetOleDbConnection())
-            {
-                connection.Open();
-                using (var command = new OleDbCommand("SELECT * FROM Orders", connection))
-                {
-                    using (var reader = command.ExecuteReader())
-                    {
-                        Orders.Load(reader);
-                    }
-                }
-            }
+            OleDbDataAdapter.Fill(Orders);
 
             OrdersView = new DataView(Orders);
 
@@ -113,43 +109,11 @@ namespace Task16.ViewModel
                 var email = SelectedClient["Email"].ToString();
                 OrdersView.RowFilter = $"Email = '{email.Replace("'", "''")}'";
             }
-
-            //var selection = Orders.AsEnumerable()
-            //    .Where(row => row.Field<string>("Email") == email);
-            //if (selection.Any())
-            //{
-            //    OrdersView = selection.CopyToDataTable();
-            //}
-            //else
-            //{
-            //    OrdersView = Orders.Copy();
-            //    OrdersView.Rows.Clear();
-            //}
-
         }
 
         public void RefreshView(object sender, EventArgs e)
         {
-            RefreshView();
-        }
-
-        public void RefreshView()
-        {
-            using (var connection = DBConnections.Instance.SqlConnection)
-            {
-                connection.Open();
-                using (var reader = SqlDataAdapter.SelectCommand.ExecuteReader())
-                {
-                    Clients.Load(reader);
-
-                }
-                connection.Close();
-            }
-
-            //SelectedClient = null;
-            //var newClients = new DataTable();
-            //SqlDataAdapter.Fill(newClients);
-            //Clients = newClients;
+            SqlDataAdapter.Fill(Clients);
             RefreshOrders();
         }
 

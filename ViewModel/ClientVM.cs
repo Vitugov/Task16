@@ -141,6 +141,7 @@ namespace Task16.ViewModel
             CurrentClientRow["Patronymic"] = Patronymic;
             CurrentClientRow["TelephoneNumber"] = TelephoneNumber;
             CurrentClientRow["Email"] = Email;
+            
         }
 
         internal void CloseWindow(object obj) => (obj as Window).Close();

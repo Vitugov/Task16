@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Runtime;
 using System.Data.Common;
+using System.ComponentModel.DataAnnotations;
 
 namespace Task16.Other
 {
@@ -86,34 +87,34 @@ namespace Task16.Other
             return oleDbStringCommands;
         }
 
-        private SqlParameter[] GetSqlParameters()
+        private Dictionary<string, SqlParameter> GetSqlParameters()
         {
             var idParameter = new SqlParameter("@Id", SqlDbType.Int, 4, "Id");
             idParameter.Direction = ParameterDirection.Output;
-            return
-            [
-                idParameter,
-                new SqlParameter("@Surname", SqlDbType.NVarChar, 25, "Surname"),
-                new SqlParameter("@FirstName", SqlDbType.NVarChar, 25, "FirstName"),
-                new SqlParameter("@Patronymic", SqlDbType.NVarChar, 25, "Patronymic"),
-                new SqlParameter("@TelephoneNumber", SqlDbType.NVarChar, 25, "TelephoneNumber"),
-                new SqlParameter("@Email", SqlDbType.NVarChar, 50, "Email")
-            ];
+            return new Dictionary<string, SqlParameter>
+            {
+                ["IdOut"] = idParameter,
+                ["Id"] = new SqlParameter("@Id", SqlDbType.Int, 4, "Id"),
+                ["Surname"] = new SqlParameter("@Surname", SqlDbType.NVarChar, 25, "Surname"),
+                ["FirstName"] = new SqlParameter("@FirstName", SqlDbType.NVarChar, 25, "FirstName"),
+                ["Patronymic"] = new SqlParameter("@Patronymic", SqlDbType.NVarChar, 25, "Patronymic"),
+                ["TelephoneNumber"] = new SqlParameter("@TelephoneNumber", SqlDbType.NVarChar, 25, "TelephoneNumber"),
+                ["Email"] = new SqlParameter("@Email", SqlDbType.NVarChar, 50, "Email")
+            };
         }
 
-        private OleDbParameter[] GetOleDbParameters()
+        private Dictionary<string,OleDbParameter> GetOleDbParameters()
         {
-            return
-            [
-                
-                new OleDbParameter("@Email", OleDbType.WChar, 50, "Email"),
-                new OleDbParameter("@ProductId", OleDbType.Integer, 0, "ProductId"),
-                new OleDbParameter("@ProductName", OleDbType.WChar, 50, "ProductName"),
-                new OleDbParameter("@Id", OleDbType.Integer, 0, "Id")
-            ];
+            return new Dictionary<string, OleDbParameter>
+            {
+                ["Email"] = new OleDbParameter("@Email", OleDbType.WChar, 50, "Email"),
+                ["ProductId"] = new OleDbParameter("@ProductId", OleDbType.Integer, 0, "ProductId"),
+                ["ProductName"] = new OleDbParameter("@ProductName", OleDbType.WChar, 50, "ProductName"),
+                ["Id"] = new OleDbParameter("@Id", OleDbType.Integer, 0, "Id")
+            };
         }
 
-        private TOut FillOutDataAdapter<TIn1, TIn2, TOut>(StringCommands stringCommands, TIn1[] dbParameters, TIn2 connection, TOut dataAdapter)
+        private TOut FillOutDataAdapter<TIn1, TIn2, TOut>(StringCommands stringCommands, Dictionary<string,TIn1> dbParameters, TIn2 connection, TOut dataAdapter)
             where TIn1 : DbParameter
             where TIn2 : DbConnection
             where TOut : DbDataAdapter, IDbDataAdapter
@@ -125,9 +126,25 @@ namespace Task16.Other
             dataAdapter.UpdateCommand = commandsDb.UpdateCommand;
             dataAdapter.DeleteCommand = commandsDb.DeleteCommand;
 
-            dataAdapter.InsertCommand.Parameters.AddMany(dbParameters.Take(3).ToArray());
-            dataAdapter.UpdateCommand.Parameters.AddMany(dbParameters);
-            dataAdapter.DeleteCommand.Parameters.Add(dbParameters[3]);
+            if (dataAdapter.GetType() == typeof(SqlDataAdapter))
+            {
+                dataAdapter.InsertCommand.Parameters.AddMany(dbParameters["Surname"], dbParameters["FirstName"],
+                    dbParameters["Patronymic"], dbParameters["TelephoneNumber"], dbParameters["Email"], dbParameters["IdOut"]);
+                dataAdapter.UpdateCommand.Parameters.AddMany(dbParameters["Surname"], dbParameters["FirstName"],
+                    dbParameters["Patronymic"], dbParameters["TelephoneNumber"], dbParameters["Email"], dbParameters["Id"]);
+                dataAdapter.DeleteCommand.Parameters.AddMany(dbParameters["Id"]);
+            }
+            else
+            {
+                dataAdapter.InsertCommand.Parameters.AddMany(dbParameters["Email"], dbParameters["ProductId"],
+                    dbParameters["ProductName"]);
+                dataAdapter.UpdateCommand.Parameters.AddMany(dbParameters["Email"], dbParameters["ProductId"],
+                    dbParameters["ProductName"], dbParameters["Id"]);
+                dataAdapter.DeleteCommand.Parameters.Add(dbParameters["Id"]);
+            }
+            //dataAdapter.InsertCommand.Parameters.AddMany(dbParameters.Take(3).ToArray());
+            //dataAdapter.UpdateCommand.Parameters.AddMany(dbParameters);
+            //dataAdapter.DeleteCommand.Parameters.Add(dbParameters[3]);
 
             return dataAdapter;
         }
