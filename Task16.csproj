@@ -15,8 +15,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\WPFUsefullThings\WPFUsefullThings.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="WPFUsefullThings">
-      <HintPath>..\Task12\WPFUsefullThings\bin\Debug\net8.0-windows\WPFUsefullThings.dll</HintPath>
+      <HintPath>..\Task16Final\WPFUsefullThings\bin\Debug\net8.0-windows\WPFUsefullThings.dll</HintPath>
     </Reference>
   </ItemGroup>
 
